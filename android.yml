@@ -1,0 +1,58 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK and NDK
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;24.0.8215888"
+
+      - name: Create temporary CI signing key
+        shell: bash
+        run: |
+          keytool -genkeypair -v \
+            -keystore "$RUNNER_TEMP/ci-signing.keystore" \
+            -storepass "ci-store-password" \
+            -alias "ci-key" \
+            -keypass "ci-key-password" \
+            -dname "CN=GitHub Actions, OU=Build, O=RG-MOD, C=US" \
+            -keyalg RSA -keysize 2048 -validity 10000
+          {
+            echo "STORE_FILE=$RUNNER_TEMP/ci-signing.keystore"
+            echo "STORE_PASSWORD=ci-store-password"
+            echo "KEY_ALIAS=ci-key"
+            echo "KEY_PASSWORD=ci-key-password"
+          } >> "$GITHUB_ENV"
+
+      - name: Build debug APK
+        run: ./gradlew --no-daemon :app:assembleDebug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RG-MOD-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
