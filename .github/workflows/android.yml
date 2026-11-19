@@ -19,8 +19,8 @@ jobs:
       - name: Extract source
         run: |
           mkdir -p source
-          unzip -oq RG-MOD-source-part1.zip -d source
-          unzip -oq RG-MOD-source-part2.zip -d source
+          unzip -oq Sanarah-source-part1.zip -d source
+          unzip -oq Sanarah-source-part2.zip -d source
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -62,5 +62,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: RG-MOD-APK
-          path: source/**/app/build/outputs/apk/debug/*.apk
+          path: ${{ steps.project.outputs.dir }}/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
