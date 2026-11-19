@@ -23,9 +23,11 @@ jobs:
           java-version: '17'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
 
-      - name: Install Android tools
+      - name: Install Android packages
         run: |
           sdkmanager "platforms;android-34"
           sdkmanager "build-tools;34.0.0"
@@ -44,4 +46,3 @@ jobs:
         with:
           name: RG-MOD-APK
           path: app/build/outputs/apk/debug/*.apk
-
