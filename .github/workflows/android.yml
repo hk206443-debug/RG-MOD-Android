@@ -13,8 +13,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download source
+      - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Extract source
+        run: |
+          mkdir -p source
+          unzip -oq RG-MOD-source-part1.zip -d source
+          unzip -oq RG-MOD-source-part2.zip -d source
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -24,25 +30,27 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
-        with:
-          packages: 'platform-tools'
 
-      - name: Install Android packages
+      - name: Install SDK
         run: |
+          sdkmanager "platform-tools"
           sdkmanager "platforms;android-34"
           sdkmanager "build-tools;34.0.0"
           sdkmanager "ndk;24.0.8215888"
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.5'
-
       - name: Build APK
-        run: gradle :app:assembleDebug
+        run: |
+          ROOT=$(find source -type f \( -name settings.gradle -o -name settings.gradle.kts \) -print -quit)
+          if [ -z "$ROOT" ]; then
+            echo "Gradle project not found"
+            find source -maxdepth 5 -type f
+            exit 1
+          fi
+          cd "$(dirname "$ROOT")"
+          gradle :app:assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: RG-MOD-APK
-          path: app/build/outputs/apk/debug/*.apk
+          path: source/**/app/build/outputs/apk/debug/*.apk
