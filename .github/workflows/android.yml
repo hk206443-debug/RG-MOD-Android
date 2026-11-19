@@ -19,7 +19,7 @@ jobs:
       - name: Extract source
         run: |
           mkdir -p source
-          unzip -oq Sanarah-source-part1.zip -d source
+          unzip -oq Sanarah-source-part1-fixed.zip -d source
           unzip -oq Sanarah-source-part2.zip -d source
 
       - name: Setup Java
