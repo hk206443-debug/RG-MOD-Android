@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v4
 
       - name: Extract source
@@ -31,22 +31,31 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
 
-      - name: Install SDK
+      - name: Install Android SDK packages
         run: |
           sdkmanager "platform-tools"
           sdkmanager "platforms;android-34"
           sdkmanager "build-tools;34.0.0"
           sdkmanager "ndk;24.0.8215888"
 
-      - name: Build APK
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '7.4.2'
+
+      - name: Locate Gradle project
+        id: project
         run: |
           ROOT=$(find source -type f \( -name settings.gradle -o -name settings.gradle.kts \) -print -quit)
           if [ -z "$ROOT" ]; then
             echo "Gradle project not found"
-            find source -maxdepth 5 -type f
             exit 1
           fi
-          cd "$(dirname "$ROOT")"
+          echo "dir=$(dirname "$ROOT")" >> "$GITHUB_OUTPUT"
+
+      - name: Build APK
+        run: |
+          cd "${{ steps.project.outputs.dir }}"
           gradle :app:assembleDebug
 
       - name: Upload APK
@@ -54,3 +63,4 @@ jobs:
         with:
           name: RG-MOD-APK
           path: source/**/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
