@@ -16,11 +16,30 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Extract source
+      - name: Find and Extract Source
         run: |
           mkdir -p source
-          unzip -oq Sanarah-source-part1-fixed.zip -d source
-          unzip -oq Sanarah-source-part2.zip -d source
+
+          echo "Searching for source ZIP files..."
+
+          PART1=$(find . -type f -iname '*part1*.zip' -not -path './.git/*' -print -quit)
+          PART2=$(find . -type f -iname '*part2*.zip' -not -path './.git/*' -print -quit)
+
+          echo "Part 1: ${PART1:-NOT FOUND}"
+          echo "Part 2: ${PART2:-NOT FOUND}"
+
+          if [ -z "$PART1" ]; then
+            echo "ERROR: Part 1 ZIP file not found in repository"
+            exit 1
+          fi
+
+          if [ -z "$PART2" ]; then
+            echo "ERROR: Part 2 ZIP file not found in repository"
+            exit 1
+          fi
+
+          unzip -oq "$PART1" -d source
+          unzip -oq "$PART2" -d source
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -47,10 +66,12 @@ jobs:
         id: project
         run: |
           ROOT=$(find source -type f \( -name settings.gradle -o -name settings.gradle.kts \) -print -quit)
+
           if [ -z "$ROOT" ]; then
             echo "Gradle project not found"
             exit 1
           fi
+
           echo "dir=$(dirname "$ROOT")" >> "$GITHUB_OUTPUT"
 
       - name: Build APK
