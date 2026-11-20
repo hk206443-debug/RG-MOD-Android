@@ -15,44 +15,36 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Prepare source folder
+      - name: Check and extract source
         run: |
+          set -e
           mkdir -p source
 
-          echo "Checking ZIP files..."
+          test -f SANARAH-source-part-1.zip
+          test -f SANARAH-source-part-2.zip
 
-          ls -lah
-
-          if [ ! -f "SANARAH-source-part-1.zip" ]; then
-            echo "ERROR: Part 1 ZIP not found"
-            exit 1
-          fi
-
-          if [ ! -f "SANARAH-source-part-2.zip" ]; then
-            echo "ERROR: Part 2 ZIP not found"
-            exit 1
-          fi
-
-          echo "Extracting part 1..."
           unzip -o SANARAH-source-part-1.zip -d source
-
-          echo "Extracting part 2..."
           unzip -o SANARAH-source-part-2.zip -d source
 
-          echo "Extraction completed"
+          test -f source/SanarahProject/gradlew
+          echo "Source extraction successful"
 
-          ls -lah source
-
-      - name: Set up JDK
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Android SDK
+      - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: |
+            platform-tools
+            platforms;android-34
+            build-tools;34.0.0
+            ndk;25.2.9519653
 
-      - name: Build Android project
+      - name: Build APK
         working-directory: source/SanarahProject
         run: |
           chmod +x gradlew
@@ -63,4 +55,5 @@ jobs:
         with:
           name: SANARAH-APK
           path: source/SanarahProject/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
           
