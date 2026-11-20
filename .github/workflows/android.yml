@@ -4,54 +4,41 @@ name: SANARAH Android Build
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Extract SANARAH Source
+      - name: Extract Source
         run: |
           mkdir -p source
           unzip -oq SANARAH-source-fixed-part1.zip -d source
           unzip -oq SANARAH-source-fixed-part2.zip -d source
 
-      - name: Verify Source Files
-        run: |
-          test -f source/SanarahProject/settings.gradle
-          test -f source/SanarahProject/build.gradle
-          test -f source/SanarahProject/app/build.gradle
-          test -f source/SanarahProject/gradlew
-          test -f source/SanarahProject/gradle/wrapper/gradle-wrapper.jar
-          test -f source/SanarahProject/gradle/wrapper/gradle-wrapper.properties
-
-      - name: Setup Java 17
+      - name: Setup Java
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK and NDK
+      - name: Build APK
         run: |
-          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9519653"
-
-      - name: Build SANARAH APK
-        working-directory: source/SanarahProject
-        run: |
-          chmod +x gradlew
-          ./gradlew --no-daemon :app:assembleDebug
+          PROJECT=source/SanarahProject
+          chmod +x "$PROJECT/app/gradlew"
+          cd "$PROJECT/app"
+          ./gradlew --no-daemon assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: SANARAH-APK
-          path: source/SanarahProject/app/build/outputs/apk/debug/*.apk
+          path: source/SanarahProject/app/build/outputs/apk/**/*.apk
           if-no-files-found: error
