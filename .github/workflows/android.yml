@@ -10,9 +10,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    env:
-      ANDROID_HOME: /usr/local/lib/android/sdk
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,14 +28,14 @@ jobs:
 
       - name: Build APK
         run: |
-          PROJECT=source/SanarahProject
-          chmod +x "$PROJECT/app/gradlew"
-          cd "$PROJECT/app"
-          ./gradlew --no-daemon assembleDebug
+          cd source/SanarahProject
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: SANARAH-APK
-          path: source/SanarahProject/app/build/outputs/apk/**/*.apk
+          path: source/SanarahProject/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+          
