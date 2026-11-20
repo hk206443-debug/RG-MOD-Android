@@ -1,41 +1,66 @@
 
-name: SANARAH Android Build
+name: Build SANARAH Android
 
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract Source
+      - name: Prepare source folder
         run: |
           mkdir -p source
-          unzip -oq SANARAH-source-fixed-part1.zip -d source
-          unzip -oq SANARAH-source-fixed-part2.zip -d source
 
-      - name: Setup Java
-        uses: actions/setup-java@v5
+          echo "Checking ZIP files..."
+
+          ls -lah
+
+          if [ ! -f "SANARAH-source-part-1.zip" ]; then
+            echo "ERROR: Part 1 ZIP not found"
+            exit 1
+          fi
+
+          if [ ! -f "SANARAH-source-part-2.zip" ]; then
+            echo "ERROR: Part 2 ZIP not found"
+            exit 1
+          fi
+
+          echo "Extracting part 1..."
+          unzip -o SANARAH-source-part-1.zip -d source
+
+          echo "Extracting part 2..."
+          unzip -o SANARAH-source-part-2.zip -d source
+
+          echo "Extraction completed"
+
+          ls -lah source
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Build APK
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build Android project
+        working-directory: source/SanarahProject
         run: |
-          cd source/SanarahProject
           chmod +x gradlew
-          ./gradlew --no-daemon :app:assembleDebug
+          ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: SANARAH-APK
           path: source/SanarahProject/app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
           
