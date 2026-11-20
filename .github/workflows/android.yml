@@ -1,3 +1,4 @@
+
 name: Build SANARAH Android
 
 on:
@@ -19,10 +20,10 @@ jobs:
           set -e
           mkdir -p source
           echo "Checking source ZIP files..."
-          test -f SANARAH-ready-part-1.zip
-          test -f SANARAH-ready-part-2.zip
-          unzip -oq SANARAH-ready-part-1.zip -d source
-          unzip -oq SANARAH-ready-part-2.zip -d source
+          test -f SANARAH-repaired-part-1.zip
+          test -f SANARAH-repaired-part-2.zip
+          unzip -oq SANARAH-repaired-part-1.zip -d source
+          unzip -oq SANARAH-repaired-part-2.zip -d source
           test -f source/SanarahProject/gradlew
 
       - name: Setup Java 17
@@ -57,3 +58,4 @@ jobs:
           name: SANARAH-APK
           path: source/SanarahProject/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+          
