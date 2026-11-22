@@ -20,57 +20,40 @@ jobs:
         run: |
           set -Eeuo pipefail
 
-          echo "Checking repository files..."
-          pwd
-          ls -lah
+          echo "Checking source ZIP files..."
 
           ZIP1="SANARAH-repaired-part-1.zip"
           ZIP2="SANARAH-repaired-part-2.zip"
 
-          echo "Checking source ZIP files..."
-
           for ZIP in "$ZIP1" "$ZIP2"; do
             if [ ! -f "$ZIP" ]; then
               echo "ERROR: Missing file: $ZIP"
-              echo "Available ZIP files:"
               find . -maxdepth 3 -type f -iname "*.zip"
               exit 1
             fi
-
-            echo "Found: $ZIP"
             unzip -tq "$ZIP"
           done
 
           mkdir -p source
 
-          echo "Extracting source part 1..."
           unzip -oq "$ZIP1" -d source
-
-          echo "Extracting source part 2..."
           unzip -oq "$ZIP2" -d source
-
-          echo "Searching for Gradle wrapper..."
 
           GRADLEW=$(find source -type f -name gradlew -print -quit)
 
           if [ -z "$GRADLEW" ]; then
-            echo "ERROR: gradlew not found inside source ZIP files."
-            find source -maxdepth 5 -type f | head -100
+            echo "ERROR: gradlew not found"
             exit 1
           fi
 
           PROJECT_DIR=$(dirname "$GRADLEW")
 
           if [ ! -d "$PROJECT_DIR/app" ]; then
-            echo "ERROR: Android app module not found."
-            echo "Project directory: $PROJECT_DIR"
+            echo "ERROR: Android app module not found"
             exit 1
           fi
 
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-
-          echo "Source extraction completed."
-          echo "Project directory: $PROJECT_DIR"
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
@@ -79,7 +62,7 @@ jobs:
           java-version: '17'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       - name: Install Android packages
         shell: bash
@@ -100,9 +83,7 @@ jobs:
           set -Eeuo pipefail
 
           cd "$PROJECT_DIR"
-
           chmod +x gradlew
-
           ./gradlew --no-daemon assembleDebug --stacktrace
 
       - name: Upload APK
