@@ -88,13 +88,27 @@ jobs:
       - name: Build SANARAH APK
         shell: bash
         run: |
-          set -Eeuo pipefail
+          set +e
 
           cd "$PROJECT_DIR"
           chmod +x gradlew
-          ./gradlew --no-daemon assembleDebug --stacktrace
+
+          ./gradlew --no-daemon assembleDebug --stacktrace --info 2>&1 | tee build.log
+
+          BUILD_STATUS=${PIPESTATUS[0]}
+
+          exit "$BUILD_STATUS"
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SANARAH-BUILD-LOG
+          path: source/**/build.log
+          if-no-files-found: ignore
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: SANARAH-APK
