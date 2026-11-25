@@ -1,3 +1,4 @@
+
 name: Build SANARAH Android
 
 on:
@@ -18,37 +19,55 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+
           python3 - <<'PY'
           import zipfile
           from pathlib import Path
 
           archives = [
-              Path("SANARAH-repaired-part-1-fixed.zip"),
-              Path("SANARAH-repaired-part-2-fixed.zip"),
+              Path("SANARAH-PANEL-CONNECTED-PART1.zip"),
+              Path("SANARAH-PANEL-CONNECTED-PART2.zip"),
           ]
+
           out = Path("source")
           out.mkdir(exist_ok=True)
 
           for archive in archives:
               if not archive.is_file():
                   raise SystemExit(f"ERROR: missing archive: {archive}")
+
               with zipfile.ZipFile(archive) as z:
                   bad = z.testzip()
                   if bad:
-                      raise SystemExit(f"ERROR: damaged ZIP entry in {archive}: {bad}")
+                      raise SystemExit(
+                          f"ERROR: damaged ZIP entry in {archive}: {bad}"
+                      )
+
                   for info in z.infolist():
                       if info.is_dir():
                           continue
-                      target = out / info.filename
+
+                      target = (out / info.filename).resolve()
+
+                      if not target.is_relative_to(out.resolve()):
+                          raise SystemExit(
+                              f"ERROR: unsafe archive path: {info.filename}"
+                          )
+
                       target.parent.mkdir(parents=True, exist_ok=True)
                       target.write_bytes(z.read(info.filename))
+
               print(f"Extracted: {archive}")
 
           print("===== PROJECT FILES =====")
+
           for p in sorted(out.rglob("*")):
               if p.is_file() and p.name in {
-                  "settings.gradle", "settings.gradle.kts",
-                  "build.gradle", "build.gradle.kts", "gradlew"
+                  "settings.gradle",
+                  "settings.gradle.kts",
+                  "build.gradle",
+                  "build.gradle.kts",
+                  "gradlew"
               }:
                   print(p)
           PY
@@ -59,20 +78,30 @@ jobs:
           set -Eeuo pipefail
 
           PROJECT_DIR=""
+
           while IFS= read -r SETTINGS; do
             CANDIDATE="$(dirname "$SETTINGS")"
+
             if [ -f "$CANDIDATE/gradlew" ]; then
               PROJECT_DIR="$CANDIDATE"
               break
             fi
-          done < <(find source -type f \( -name settings.gradle -o -name settings.gradle.kts \) | sort)
+          done < <(
+            find source -type f \
+              \( -name settings.gradle -o -name settings.gradle.kts \) \
+              | sort
+          )
 
           if [ -z "$PROJECT_DIR" ]; then
-            echo "ERROR: Could not find a directory containing both settings.gradle(.kts) and gradlew"
+            echo "ERROR: Android project not found."
             echo "Found Gradle wrappers:"
             find source -type f -name gradlew -print || true
+
             echo "Found settings files:"
-            find source -type f \( -name settings.gradle -o -name settings.gradle.kts \) -print || true
+            find source -type f \
+              \( -name settings.gradle -o -name settings.gradle.kts \) \
+              -print || true
+
             exit 1
           fi
 
@@ -92,7 +121,9 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+
           sdkmanager --licenses </dev/null || true
+
           sdkmanager \
             "platform-tools" \
             "platforms;android-34" \
@@ -103,9 +134,16 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+
           cd "$PROJECT_DIR"
+
           chmod +x gradlew
-          ./gradlew --no-daemon assembleDebug --stacktrace --info 2>&1 | tee build.log
+
+          ./gradlew \
+            --no-daemon \
+            assembleDebug \
+            --stacktrace \
+            --info 2>&1 | tee build.log
 
       - name: Upload build log
         if: always()
